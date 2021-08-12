@@ -1,8 +1,6 @@
 package application
 
 import (
-	"github.com/divilla/ethproxy/pkg/ethcache"
-	"github.com/divilla/ethproxy/pkg/ethclient"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -10,10 +8,11 @@ import (
 type (
 	controller struct {
 		service *service
+		logger  echo.Logger
 	}
 )
 
-func Controller(e *echo.Echo, client *ethclient.EthereumHttpClient, cache *ethcache.EthereumBlockCache) {
+func Controller(e *echo.Echo, client IEthereumClient, cache IEthereumCache) {
 	c := &controller{
 		service: Service(client, cache, e.Logger),
 	}

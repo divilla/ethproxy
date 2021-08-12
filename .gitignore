@@ -25,3 +25,6 @@ coverage*.*
 
 #build - executables
 /cmd/build/
+
+#docker
+/cmd/docker

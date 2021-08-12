@@ -1,7 +1,6 @@
 package application
 
 import (
-	"github.com/divilla/ethproxy/pkg/ethcache"
 	"github.com/divilla/ethproxy/pkg/ethclient"
 	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
@@ -31,7 +30,7 @@ type (
 	}
 )
 
-func Service(client *ethclient.EthereumHttpClient, cache *ethcache.EthereumBlockCache, logger echo.Logger) *service {
+func Service(client IEthereumClient, cache IEthereumCache, logger echo.Logger) *service {
 	return &service{
 		client:    client,
 		cache:     cache,
