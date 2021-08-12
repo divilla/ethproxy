@@ -28,3 +28,4 @@ coverage*.*
 
 #docker
 /cmd/docker
+/pkg/messenger

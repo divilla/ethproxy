@@ -26,7 +26,6 @@ type (
 
 	exec struct {
 		ch   chan response
-		done chan struct{}
 		wg   *sync.WaitGroup
 	}
 
@@ -102,11 +101,11 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 	if _, ok := c.execMap[nr]; !ok {
 		c.execMap[nr] = exec{
 			ch:   make(chan response, 1000),
-			done: make(chan struct{}, 1),
 			wg:   &sync.WaitGroup{},
 		}
 	}
 
+	// WaitGroup has sole purpose to enable channel drain, I didn't find any other way to detect when last request was issued
 	if len(c.execMap[nr].ch) == 0 {
 		c.execMap[nr].wg.Add(1)
 		defer func() {
@@ -125,6 +124,7 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 			err:  err,
 		}
 
+		//Goroutine is used to drain channel
 		go func(c *EthereumHttpClient) {
 			time.Sleep(1 * time.Second)
 			c.execMap[nr].wg.Wait()
@@ -134,6 +134,7 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 			return
 		}(c)
 
+		//I know it looks ugly, but didn't find any nicer way to push fetch result to unknown number of goroutines
 		//i := 0
 		for {
 			select {
