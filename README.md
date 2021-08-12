@@ -83,7 +83,7 @@ The starter kit uses the following project layout:
 .
 ├── cmd                  main applications of the project
 │   └── server           main file
-├── config               configuration file
+├── config               configuration file directory (should be yaml, but didn't had time)
 ├── internal             private application and library code
 │   ├── application      controller and service of main application
 │   ├── healthcheck      healthcheck feature
