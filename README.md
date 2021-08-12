@@ -77,7 +77,7 @@ To use ab load tester tool go to cmd/ab and check the scripts. -n sets total num
 
 ## Project Layout
 
-The starter kit uses the following project layout:
+The following is the project layout:
  
 ```
 .
