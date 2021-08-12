@@ -61,8 +61,7 @@ At this time, you have a RESTful API server running at `http://127.0.0.1:8080`. 
 
 Try the URL `http://localhost:8080/healthcheck` in a browser, and you should see something like `"OK v1.0.0"` displayed.
 
-Heavy load testing is prepared via `Apache ab` that can be downloaded at [Postman](https://www.getpostman.com/)), you may try the following 
-more complex scenarios:
+Heavy load testing is done via `Apache ab` that can be downloaded:
 
 ```shell
 # Ubuntu / Debian
