@@ -98,7 +98,7 @@ The top level directories `cmd`, `internal`, `pkg` are commonly found in other p
 
 Within `internal` and `pkg`, packages are structured by features in order to achieve the so-called
 [screaming architecture](https://blog.cleancoder.com/uncle-bob/2011/09/30/Screaming-Architecture.html). For example, 
-the `album` directory contains the application logic related with the album feature. 
+the `application` directory contains the application logic. 
 
 Within each feature package, code are organized in layers (API, service, repository), following the dependency guidelines
 as described in the [clean architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html).
