@@ -106,4 +106,4 @@ as described in the [clean architecture](https://blog.cleancoder.com/uncle-bob/2
 
 ### Managing Configurations
 
-Due to lack of time config is implemented as package constants
+Due to lack of time config is implemented as package constants. The good side is you can easily play with settings and test solution all over.
