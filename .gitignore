@@ -22,4 +22,6 @@ coverage*.*
 
 #Idea
 .idea
+
+#build - executables
 /cmd/build/
