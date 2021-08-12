@@ -88,9 +88,9 @@ The starter kit uses the following project layout:
 │   ├── application      controller and service of main application
 │   ├── healthcheck      healthcheck feature
 └── pkg                  reusable packages made from scratch
-   ├── ethcache         decoupled caching package
-   ├── ethclient        client for fetching Ethereum / disabled multirequest for same resource
-   └── jsonclient       decoupled json client with isolated Poster interface
+   ├── ethcache          decoupled caching package
+   ├── ethclient         client for fetching Ethereum / disabled multirequest for same resource
+   └── jsonclient        decoupled json client with isolated Poster interface
 ```
 
 The top level directories `cmd`, `internal`, `pkg` are commonly found in other popular Go projects, as explained in
