@@ -3,6 +3,7 @@ module github.com/divilla/ethproxy
 go 1.16
 
 require (
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/google/pprof v0.0.0-20210804190019-f964ff605595 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/ianlancetaylor/demangle v0.0.0-20210724235854-665d3a6fe486 // indirect

@@ -1,22 +1,18 @@
 package ethclient
 
 import (
-	"fmt"
+	"github.com/divilla/ethproxy/interfaces"
 	"github.com/labstack/echo/v4"
 	"sync"
 	"time"
 )
 
 type (
-	IHttpClient interface {
-		Post(string) ([]byte, error)
-	}
-
 	Logger = echo.Logger
 
 	EthereumHttpClient struct {
-		client            IHttpClient
-		logger            echo.Logger
+		client            interfaces.HttpClient
+		logger            interfaces.ErrorLogger
 		refreshInterval   time.Duration
 		baseRequest       string
 		latestBlockNumber uint64
@@ -32,7 +28,7 @@ type (
 	Callback func([]byte, error)
 )
 
-func New(client IHttpClient, logger Logger, refreshInterval time.Duration) *EthereumHttpClient {
+func New(client interfaces.HttpClient, logger interfaces.ErrorLogger, refreshInterval time.Duration) *EthereumHttpClient {
 	c := &EthereumHttpClient{
 		client:          client,
 		logger:          logger,
@@ -70,9 +66,10 @@ func (c *EthereumHttpClient) GetBlockByNumber(nr uint64) ([]byte, error) {
 }
 
 func (c *EthereumHttpClient) Done() {
-	//for k := range c.wgMap {
-	//	close(c.wgMap[k])
-	//}
+	for k := range c.execMap {
+		close(c.execMap[k].ch)
+	}
+
 	c.done <- struct{}{}
 	close(c.done)
 }
@@ -81,17 +78,17 @@ func (c *EthereumHttpClient) setBlockNumber() {
 	req := request("blockNumber")
 	json, err := c.client.Post(req.String())
 	if err != nil {
-		c.logger.Error(err)
+		c.logger.Errorf("EthereumHttpClient failed to execute request '%s', with error: %w", req.String(), err)
 	}
 
 	resHex, err := parseResponse(json, req)
 	if err != nil {
-		c.logger.Error(err)
+		c.logger.Errorf("EthereumHttpClient failed to parse response '%s' from request '%s' with error: %w", json, req, err)
 	}
 
 	resInt, err := HexToUInt(string(resHex))
 	if err != nil {
-		c.logger.Error(fmt.Errorf("unable to parse 'result' from: '%s' to int: %w", json, err))
+		c.logger.Errorf("EthereumHttpClient failed to parse hex '%s' to int, with error: %w", resHex, err)
 	}
 
 	c.latestBlockNumber = resInt

@@ -1,6 +1,9 @@
 package application
 
 import (
+	"fmt"
+	"github.com/divilla/ethproxy/interfaces"
+	"github.com/divilla/ethproxy/pkg/blockcache"
 	"github.com/divilla/ethproxy/pkg/ethclient"
 	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
@@ -10,27 +13,14 @@ import (
 )
 
 type (
-	IEthereumCache interface {
-		Get(uint64) ([]byte, error)
-		Put(uint64, []byte, uint64) error
-		Remove(uint64) error
-		FreeSpace() int
-	}
-
-	IEthereumClient interface {
-		LatestBlockNumber() uint64
-		GetLatestBlock() ([]byte, error)
-		GetBlockByNumber(uint64) ([]byte, error)
-	}
-
 	service struct {
-		client    IEthereumClient
-		cache     IEthereumCache
-		logger    echo.Logger
+		client interfaces.EthereumHttpClient
+		cache  interfaces.BlockCacher
+		logger interfaces.ErrorLogger
 	}
 )
 
-func Service(client IEthereumClient, cache IEthereumCache, logger echo.Logger) *service {
+func Service(client interfaces.EthereumHttpClient, cache interfaces.BlockCacher, logger interfaces.ErrorLogger) *service {
 	return &service{
 		client:    client,
 		cache:     cache,
@@ -38,7 +28,16 @@ func Service(client IEthereumClient, cache IEthereumCache, logger echo.Logger) *
 	}
 }
 
-func (s *service) getLatestBlockNumber() string {
+func (s *service) cacheFreeSpace() string {
+	json, err := sjson.Set(`{}`, "cacheFreeSpace", s.cache.FreeSpace())
+	if err != nil {
+		panic(err)
+	}
+
+	return json
+}
+
+func (s *service) latestBlockNumber() string {
 	json, err := sjson.Set(`{}`, "latestBlockNumber", s.client.LatestBlockNumber())
 	if err != nil {
 		panic(err)
@@ -59,32 +58,34 @@ func (s *service) getBlockByNumber(nrs string) ([]byte, error) {
 			return nil, err
 		}
 
-		s.cache.Put(nri, json, s.client.LatestBlockNumber())
+		if err = s.cache.Put(nri, json, blockcache.BlockExpires(nri, s.client.LatestBlockNumber())); err != nil {
+			return nil, err
+		}
 
 		return json, nil
 	}
 
 	nri, err := strconv.ParseUint(nrs, 10, 64)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "block number is not valid integer")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("block number '%s' is not valid integer", nrs))
 	}
 
 	json, err := s.cache.Get(nri)
-	if err != nil {
+	if err == nil {
 		return json, nil
-	} else {
-		s.logger.Error(err)
 	}
 
 	json, err = s.client.GetBlockByNumber(nri)
 	if err != nil {
-		return nil, err
+		s.logger.Error(err)
 	}
 	if json == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, "block with that number not found")
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("block with number '%s' not found", nrs))
 	}
 
-	s.cache.Put(nri, json, s.client.LatestBlockNumber())
+	if err = s.cache.Put(nri, json, blockcache.BlockExpires(nri, s.client.LatestBlockNumber())); err != nil {
+		return nil, err
+	}
 
 	return json, err
 }
@@ -97,7 +98,7 @@ func (s *service) getTransactionByBlockNumberAndIndex(nrs string, trs string) ([
 
 	tri, err := strconv.ParseUint(trs, 10, 64)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, "transaction index is not valid integer")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("transaction index '%s' is not valid integer", trs))
 	}
 
 	var transaction []byte
@@ -111,7 +112,7 @@ func (s *service) getTransactionByBlockNumberAndIndex(nrs string, trs string) ([
 	})
 
 	if transaction == nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "transaction with that index not found in block")
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("transaction with index '%x' not found in block number '%s'", trs, nrs))
 	}
 
 	return transaction, nil

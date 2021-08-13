@@ -2,8 +2,10 @@ package jsonclient
 
 import (
 	"bytes"
-	"fmt"
+	"github.com/asaskevich/govalidator"
 	"github.com/divilla/ethproxy/config"
+	"github.com/divilla/ethproxy/interfaces"
+	"github.com/divilla/ethproxy/pkg/gerror"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -11,14 +13,23 @@ import (
 
 type (
 	JsonHttpClient struct {
-		Url string
+		url    string
+		logger interfaces.ErrorLogger
 	}
 )
 
-func New(url string) *JsonHttpClient {
+func New(logger interfaces.ErrorLogger) *JsonHttpClient {
 	return &JsonHttpClient{
-		Url: url,
+		logger: logger,
 	}
+}
+func (c *JsonHttpClient) Url(url string) error {
+	if !govalidator.IsURL(url) {
+		return gerror.Newf("'%s' is not valid url", url)
+	}
+	c.url = url
+
+	return nil
 }
 
 func (c *JsonHttpClient) Post(request string) ([]byte, error) {
@@ -26,14 +37,16 @@ func (c *JsonHttpClient) Post(request string) ([]byte, error) {
 	var err error
 	var body []byte
 
-	for i:=0; i<config.FetchRetries; i++ {
-		resp, err = http.Post(c.Url, "application/json", bytes.NewBuffer([]byte(request)))
-		if err == nil {
+	for i := 0; i < config.FetchRetries; i++ {
+		resp, err = http.Post(c.url, "application/json", bytes.NewBuffer([]byte(request)))
+		if err != nil {
+			c.logger.Errorf("unable to fetch '%s', with body '%s', retry '%d/%d', with error: '%e'", c.url, request, i+1, config.FetchRetries, err)
+		} else {
 			break
 		}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("http POST request to '%s' with body '%s' failed with: %w", c.Url, request, err)
+		return nil, gerror.Newf("http POST request to '%s', with body '%s', with '%d' retries, failed with: %w", c.url, request, config.FetchRetries, err)
 	}
 
 	defer func(Body io.ReadCloser) {

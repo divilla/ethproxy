@@ -9,8 +9,9 @@ This software promotes hexagonal architecture, which is imho best for Go microse
 and [clean architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html). 
 It encourages writing clean and idiomatic Go code. 
 
-Functionalities:
+## Functionalities:
 
+* All code is custom made from scratch
 * Endpoint for Ethereum latest block proxy: /block/latest
 * Endpoint for Ethereum block by number proxy: /block/123456
 * Endpoint for Ethereum transaction by block number and transaction index proxy: /block/123456/transaction/3
@@ -22,12 +23,39 @@ Functionalities:
 * Test executes configured large number of requests showing latency, cache capacity, number of requests per block etc
 * However, application is maximally decoupled so unit testing is easy to do
 * Apache ab tests for heavy load testing are in /cmd/ab directory
-* Application runs about 200% faster than example application
+* Server recovers of panic & error
+* Request timeout in 3 seconds
 * Graceful shutdown is implemented by 10 seconds grace period executed by kill SIGNAL 1
 * Healthcheck is implemented by /healthcheck
 * There are Dockefile and docker-compose.yml attached
 * See Makefile for available commands
- 
+
+## Architecture:
+
+* **Single responsibility principle**: every package has single responsibility, all packages are decoupled where it was possible
+* **Open-closed principle**: all packages except internal have public types open to extension, public methods are carefully chosen
+* **Liskov substitution principle**: all packages are abstracted with interface in /interfaces
+* **Interface segregation principle**: see interfaces /interfaces and concrete types
+* **Dependancy inversion principle**: see jsonclient/ethclient, and how /internal/application/service.go imports interfaces not to depend on lower level services
+* **Dependancy injection**: see /cmd/server/main.go
+* **Clean architecture**: see how /internal/application is modeled
+
+## Error handling
+
+* All errors are properly handled and always throw json formatted errors
+* Invalid format block number '0x100' returns Bad Request status
+* Block number that does not exists returns Not Found status
+* All other errors return Internal Server Error - error is logged
+* In case of **panic** server successfully recovers try /test/panic-recover
+* In case of **timeout** configured to 3 sec returns response timeout try /test/timeout
+
+## Heavy load testing
+
+* See **/cmd/ab** scripts, all put server under heavy load
+* Server never crashes or issues too many fetch requests
+* In case of multiple requests to the same resource server issues single fetch request, all subsequent requests to the same resource are passed to new request goroutine via channels see /pkg/ethclient/getBlockByNumber
+* /block/latest caches by number, always issuing new request, try **/cmd/ab/latest.sh**
+
 ## Getting Started
 
 If this is your first time encountering Go, please follow [the instructions](https://golang.org/doc/install) to

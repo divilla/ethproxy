@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/divilla/ethproxy/interfaces"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -8,23 +9,29 @@ import (
 type (
 	controller struct {
 		service *service
-		logger  echo.Logger
+		logger  interfaces.ErrorLogger
 	}
 )
 
-func Controller(e *echo.Echo, client IEthereumClient, cache IEthereumCache) {
+func Controller(e *echo.Echo, client interfaces.EthereumHttpClient, cache interfaces.BlockCacher) {
 	c := &controller{
 		service: Service(client, cache, e.Logger),
 	}
 
+	e.GET("/cache-free-space", c.cacheFreeSpace)
 	e.GET("/latest-block-number", c.latestBlockNumber)
 	e.GET("/block/:bnr", c.getBlockByNumber)
 	e.GET("/block/:bnr/transaction/:tid", c.getTransactionByBlockNumberAndIndex)
 }
 
+func (c *controller) cacheFreeSpace(ctx echo.Context) error {
+	ctx.Response().Header().Set("Content-Type", "application/json")
+	return ctx.String(http.StatusOK, c.service.cacheFreeSpace())
+}
+
 func (c *controller) latestBlockNumber(ctx echo.Context) error {
 	ctx.Response().Header().Set("Content-Type", "application/json")
-	return ctx.String(http.StatusOK, c.service.getLatestBlockNumber())
+	return ctx.String(http.StatusOK, c.service.latestBlockNumber())
 }
 
 func (c *controller) getBlockByNumber(ctx echo.Context) error {
