@@ -98,17 +98,12 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 	if _, ok := c.execMap[nr]; !ok {
 		c.execMap[nr] = exec{
 			ch: make(chan response, 1000),
-			wg: &sync.WaitGroup{},
+			//wg: &sync.WaitGroup{},
 		}
 	}
 
 	// WaitGroup has sole purpose to enable channel drain, I didn't find any other way to detect when last request was issued
 	if len(c.execMap[nr].ch) == 0 {
-		c.execMap[nr].wg.Add(1)
-		defer func() {
-			c.execMap[nr].wg.Done()
-		}()
-
 		req := request("getBlockByNumber").
 			param(nr).
 			param(true)
@@ -124,7 +119,6 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 		//Goroutine is used to drain channel
 		go func(c *EthereumHttpClient) {
 			time.Sleep(time.Second)
-			c.execMap[nr].wg.Wait()
 			for len(c.execMap[nr].ch) > 0 {
 				<-c.execMap[nr].ch
 			}
@@ -143,11 +137,6 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 			}
 		}
 	} else {
-		c.execMap[nr].wg.Add(1)
-		defer func() {
-			c.execMap[nr].wg.Done()
-		}()
-
 		res := <-c.execMap[nr].ch
 		return res.json, res.err
 	}
