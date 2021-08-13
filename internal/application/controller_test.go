@@ -93,7 +93,7 @@ func TestController_GetBlockByNumberHeavyLoad(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	blockRequestMap := make(map[int]int)
-	for i:=0; i<Requests; i++ {
+	for i := 0; i < Requests; i++ {
 		start := time.Now()
 		blockNumber := BlockNumber - rand.Intn(RandomizeNumbers)
 		blockRequestMap[blockNumber]++

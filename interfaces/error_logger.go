@@ -17,4 +17,3 @@ type ErrorLogger interface {
 	//Fatalf(format string, args ...interface{})
 	//Panicj(j log.JSON)
 }
-

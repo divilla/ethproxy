@@ -2,8 +2,8 @@ package test
 
 import (
 	"github.com/divilla/ethproxy/interfaces"
-	"github.com/divilla/ethproxy/pkg/gerror"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"net/http"
 	"time"
 )
@@ -27,19 +27,19 @@ func Controller(e *echo.Echo) {
 }
 
 func (c *controller) panicRecover(ctx echo.Context) error {
-	panic(gerror.New("panic recover"))
+	panic(errors.New("panic recover"))
 }
 
 func (c *controller) errorRecover(ctx echo.Context) error {
-	c.logger.Error(gerror.New("error recover"))
-	return gerror.NewCode(gerror.CodeInvalidConfiguration, "invalid configuration")
+	c.logger.Error(errors.New("some new error"))
+	return errors.New("invalid configuration")
 }
 
 func (c *controller) timeout(ctx echo.Context) error {
 	time.Sleep(6 * time.Second)
-	return gerror.NewCode(gerror.CodeInvalidConfiguration, "timeout error")
+	return errors.New("timeout error")
 }
 
 func (c *controller) httpError(ctx echo.Context) error {
-	return echo.NewHTTPError(http.StatusForbidden, gerror.NewCode(gerror.CodeInvalidConfiguration, "timeout error"))
+	return echo.NewHTTPError(http.StatusForbidden, errors.New("timeout error"))
 }

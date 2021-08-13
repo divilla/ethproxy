@@ -22,9 +22,9 @@ type (
 
 func Service(client interfaces.EthereumHttpClient, cache interfaces.BlockCacher, logger interfaces.ErrorLogger) *service {
 	return &service{
-		client:    client,
-		cache:     cache,
-		logger:    logger,
+		client: client,
+		cache:  cache,
+		logger: logger,
 	}
 }
 
@@ -53,13 +53,14 @@ func (s *service) getBlockByNumber(nrs string) ([]byte, error) {
 			return nil, err
 		}
 
-		nri, err := ethclient.HexToUInt(gjson.GetBytes(json, "number").String())
-		if err != nil {
-			return nil, err
-		}
+		result := gjson.GetBytes(json, "number")
+		if result.Exists() && result.String() != "" {
+			nri, err := ethclient.HexToUInt(result.String())
+			if err != nil {
+				return nil, err
+			}
 
-		if err = s.cache.Put(nri, json, blockcache.BlockExpires(nri, s.client.LatestBlockNumber())); err != nil {
-			return nil, err
+			_ = s.cache.Put(nri, json, blockcache.BlockExpires(nri, s.client.LatestBlockNumber()))
 		}
 
 		return json, nil
@@ -84,7 +85,7 @@ func (s *service) getBlockByNumber(nrs string) ([]byte, error) {
 	}
 
 	if err = s.cache.Put(nri, json, blockcache.BlockExpires(nri, s.client.LatestBlockNumber())); err != nil {
-		return nil, err
+		s.logger.Error(err)
 	}
 
 	return json, err
@@ -103,7 +104,7 @@ func (s *service) getTransactionByBlockNumberAndIndex(nrs string, trs string) ([
 
 	var transaction []byte
 	trh := ethclient.UIntToHex(tri)
-	gjson.GetBytes(json,"transactions").ForEach(func(key, value gjson.Result) bool {
+	gjson.GetBytes(json, "transactions").ForEach(func(key, value gjson.Result) bool {
 		if value.Get("transactionIndex").String() == trh {
 			transaction = []byte(value.Raw)
 			return false

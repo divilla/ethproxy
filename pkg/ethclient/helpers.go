@@ -33,4 +33,3 @@ func BigToHex(bigInt big.Int) string {
 
 	return "0x" + strings.TrimPrefix(fmt.Sprintf("%x", bigInt.Bytes()), "0")
 }
-

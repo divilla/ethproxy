@@ -30,7 +30,9 @@ func HTTPErrorHandler(err error, c echo.Context) {
 			message = echo.Map{"message": m}
 		}
 	} else if e, ok := he.Message.(error); ok {
-		message = echo.Map{"message": e.Error()}
+		message = echo.Map{
+			"message": e.Error(),
+		}
 	}
 
 	// Send response

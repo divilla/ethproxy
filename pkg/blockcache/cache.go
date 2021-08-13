@@ -3,7 +3,6 @@ package blockcache
 import (
 	"fmt"
 	"github.com/divilla/ethproxy/config"
-	"github.com/divilla/ethproxy/pkg/gerror"
 	"github.com/pkg/errors"
 	"sync"
 	"time"
@@ -74,7 +73,7 @@ func (c *EthereumBlockCache) Put(nr uint64, json []byte, ttl time.Duration) erro
 	}
 
 	if _, ok := c.items[nr]; ok {
-		return gerror.Newf("block number '%d' already exists in cache", nr)
+		return errors.Errorf("block number '%d' already exists in cache", nr)
 	}
 
 	c.rwm.Lock()

@@ -21,8 +21,8 @@ type (
 	}
 
 	exec struct {
-		ch   chan response
-		wg   *sync.WaitGroup
+		ch chan response
+		wg *sync.WaitGroup
 	}
 
 	Callback func([]byte, error)
@@ -97,8 +97,8 @@ func (c *EthereumHttpClient) setBlockNumber() {
 func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 	if _, ok := c.execMap[nr]; !ok {
 		c.execMap[nr] = exec{
-			ch:   make(chan response, 1000),
-			wg:   &sync.WaitGroup{},
+			ch: make(chan response, 1000),
+			wg: &sync.WaitGroup{},
 		}
 	}
 
@@ -123,7 +123,7 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 
 		//Goroutine is used to drain channel
 		go func(c *EthereumHttpClient) {
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Second)
 			c.execMap[nr].wg.Wait()
 			for len(c.execMap[nr].ch) > 0 {
 				<-c.execMap[nr].ch

@@ -2,10 +2,11 @@ package jsonclient
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/divilla/ethproxy/config"
 	"github.com/divilla/ethproxy/interfaces"
-	"github.com/divilla/ethproxy/pkg/gerror"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,7 +26,7 @@ func New(logger interfaces.ErrorLogger) *JsonHttpClient {
 }
 func (c *JsonHttpClient) Url(url string) error {
 	if !govalidator.IsURL(url) {
-		return gerror.Newf("'%s' is not valid url", url)
+		return errors.Errorf("'%s' is not valid url", url)
 	}
 	c.url = url
 
@@ -46,7 +47,7 @@ func (c *JsonHttpClient) Post(request string) ([]byte, error) {
 		}
 	}
 	if err != nil {
-		return nil, gerror.Newf("http POST request to '%s', with body '%s', with '%d' retries, failed with: %w", c.url, request, config.FetchRetries, err)
+		return nil, fmt.Errorf("http POST request to '%s', with body '%s', with '%d' retries, failed with: %w", c.url, request, config.FetchRetries, err)
 	}
 
 	defer func(Body io.ReadCloser) {

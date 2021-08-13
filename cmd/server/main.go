@@ -24,18 +24,18 @@ func main() {
 	//defer profile.Start(profile.MemProfileHeap, profile.ProfilePath("/home/vito/go/projects/ethproxy/cmd/profile/")).Stop()
 
 	e := echo.New()
-	//e.Use(middleware.Logger())
-	//e.Logger.SetLevel(log.INFO)
+	e.HTTPErrorHandler = cmiddleware.HTTPErrorHandler
+	e.Use(middleware.Logger())
+	e.Logger.SetLevel(log.INFO)
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		StackSize: 1 << 10, // 1 KB
 		LogLevel:  log.ERROR,
 	}))
-	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Skipper:      middleware.DefaultSkipper,
-		ErrorMessage: "request timeout, please try again",
-		Timeout:      3*time.Second,
-	}))
-	e.HTTPErrorHandler = cmiddleware.HTTPErrorHandler
+	//e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
+	//	//Skipper:      middleware.DefaultSkipper,
+	//	ErrorMessage: "request timeout, please try again",
+	//	Timeout:      3*time.Second,
+	//}))
 
 	jClient := jsonclient.New(e.Logger)
 	err := jClient.Url(config.EthereumJsonRPCUrl)
