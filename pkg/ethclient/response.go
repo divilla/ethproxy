@@ -7,11 +7,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-type response struct {
-	json []byte
-	err  error
-}
-
 var RateLimitErr = errors.New("Rate limiting threshold exceeded, please wait before running more queries")
 
 func parseResponse(json []byte, req *jsonRPCRequest) ([]byte, error) {

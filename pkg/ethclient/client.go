@@ -3,7 +3,6 @@ package ethclient
 import (
 	"github.com/divilla/ethproxy/interfaces"
 	"github.com/labstack/echo/v4"
-	"sync"
 	"time"
 )
 
@@ -12,30 +11,33 @@ type (
 
 	EthereumHttpClient struct {
 		client            interfaces.HttpClient
-		logger            interfaces.ErrorLogger
+		logger            interfaces.Logger
 		refreshInterval   time.Duration
 		baseRequest       string
 		latestBlockNumber uint64
 		done              chan struct{}
-		execMap           map[string]exec
+		fetchMap          map[string]fetch
 	}
 
-	exec struct {
-		ch chan response
-		wg *sync.WaitGroup
+	fetch struct {
+		add      chan struct{}
+		response chan response
 	}
 
-	Callback func([]byte, error)
+	response struct {
+		json []byte
+		err  error
+	}
 )
 
-func New(client interfaces.HttpClient, logger interfaces.ErrorLogger, refreshInterval time.Duration) *EthereumHttpClient {
+func New(client interfaces.HttpClient, refreshInterval time.Duration, logger interfaces.Logger) *EthereumHttpClient {
 	c := &EthereumHttpClient{
 		client:          client,
 		logger:          logger,
 		refreshInterval: refreshInterval,
 		baseRequest:     `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[]}`,
 		done:            make(chan struct{}),
-		execMap:         make(map[string]exec),
+		fetchMap:        make(map[string]fetch),
 	}
 
 	go func(c *EthereumHttpClient) {
@@ -66,10 +68,6 @@ func (c *EthereumHttpClient) GetBlockByNumber(nr uint64) ([]byte, error) {
 }
 
 func (c *EthereumHttpClient) Done() {
-	for k := range c.execMap {
-		close(c.execMap[k].ch)
-	}
-
 	c.done <- struct{}{}
 	close(c.done)
 }
@@ -95,49 +93,47 @@ func (c *EthereumHttpClient) setBlockNumber() {
 }
 
 func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
-	if _, ok := c.execMap[nr]; !ok {
-		c.execMap[nr] = exec{
-			ch: make(chan response, 1000),
-			//wg: &sync.WaitGroup{},
-		}
-	}
-
-	// WaitGroup has sole purpose to enable channel drain, I didn't find any other way to detect when last request was issued
-	if len(c.execMap[nr].ch) == 0 {
-		req := request("getBlockByNumber").
-			param(nr).
-			param(true)
-
-		json, err := c.client.Post(req.String())
-		json, err = parseResponse(json, req)
-
-		res := response{
-			json: json,
-			err:  err,
+	if _, ok := c.fetchMap[nr]; !ok {
+		c.fetchMap[nr] = fetch{
+			add:      make(chan struct{}, 1000),
+			response: make(chan response),
 		}
 
-		//Goroutine is used to drain channel
 		go func(c *EthereumHttpClient) {
-			time.Sleep(time.Second)
-			for len(c.execMap[nr].ch) > 0 {
-				<-c.execMap[nr].ch
+			req := request("getBlockByNumber").
+				param(nr).
+				param(true)
+
+			json, err := c.client.Post(req.String())
+			json, err = parseResponse(json, req)
+
+			res := response{
+				json: json,
+				err:  err,
 			}
-			return
+
+			for {
+				select {
+				case <- c.fetchMap[nr].add:
+					c.fetchMap[nr].response <-res
+				case <-time.After(time.Second):
+					if len(c.fetchMap[nr].add) == 0 {
+						close(c.fetchMap[nr].response)
+						delete(c.fetchMap, nr)
+						return
+					}
+				}
+			}
 		}(c)
 
-		//I know it looks ugly, but didn't find any nicer way to push fetch result to unknown number of goroutines
-		//i := 0
-		for {
-			select {
-			case c.execMap[nr].ch <- res:
-				//i++
-				//c.logger.Infof("'%v' request in the same channel", i)
-			default:
-				return res.json, res.err
-			}
-		}
+		c.fetchMap[nr].add <- struct{}{}
+
+		res := <- c.fetchMap[nr].response
+		return res.json, res.err
 	} else {
-		res := <-c.execMap[nr].ch
+		c.fetchMap[nr].add <- struct{}{}
+
+		res := <- c.fetchMap[nr].response
 		return res.json, res.err
 	}
 }

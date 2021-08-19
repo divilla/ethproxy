@@ -1,8 +1,7 @@
 package blockcache
 
 import (
-	"fmt"
-	"github.com/divilla/ethproxy/config"
+	"github.com/divilla/ethproxy/interfaces"
 	"github.com/pkg/errors"
 	"sync"
 	"time"
@@ -10,10 +9,12 @@ import (
 
 type (
 	EthereumBlockCache struct {
-		items map[uint64]*item
-		cap   int
-		rwm   sync.RWMutex
-		done  chan struct{}
+		items  map[uint64]*item
+		cap    int
+		remExp time.Duration
+		logger interfaces.Logger
+		rwm    sync.RWMutex
+		done   chan struct{}
 	}
 
 	item struct {
@@ -24,11 +25,13 @@ type (
 )
 
 //New creates new string EthereumBlockCache
-func New(capacity int) *EthereumBlockCache {
+func New(capacity int, removeExpired time.Duration, logger interfaces.Logger) *EthereumBlockCache {
 	c := &EthereumBlockCache{
-		items: make(map[uint64]*item),
-		cap:   capacity,
-		done:  make(chan struct{}),
+		items:  make(map[uint64]*item),
+		remExp: removeExpired,
+		cap:    capacity,
+		logger: logger,
+		done:   make(chan struct{}),
 	}
 
 	//goroutine that deletes expired items from cache
@@ -37,8 +40,7 @@ func New(capacity int) *EthereumBlockCache {
 			select {
 			case <-c.done:
 				return
-			default:
-				time.Sleep(config.RemoveExpiredInterval)
+			case <-time.After(c.remExp):
 				c.clear()
 			}
 		}
@@ -49,13 +51,12 @@ func New(capacity int) *EthereumBlockCache {
 
 //Get returns ethereum block json
 func (c *EthereumBlockCache) Get(nr uint64) ([]byte, error) {
-	if val, ok := c.items[nr]; ok && val.expires < time.Now().UnixNano() {
-		err := c.Delete(nr)
-		return nil, fmt.Errorf("block expired: %w", err)
-	}
-
 	c.rwm.RLock()
 	defer c.rwm.RUnlock()
+
+	if val, ok := c.items[nr]; ok && val.expires < time.Now().UnixNano() {
+		return nil, errors.Errorf("block expired: %s", time.Unix(0, val.expires))
+	}
 
 	if val, ok := c.items[nr]; ok {
 		return val.json, nil
@@ -72,7 +73,7 @@ func (c *EthereumBlockCache) Put(nr uint64, json []byte, ttl time.Duration) erro
 		expires: time.Now().Add(ttl).UnixNano(),
 	}
 
-	if _, ok := c.items[nr]; ok {
+	if val, ok := c.items[nr]; ok && val.expires > time.Now().UnixNano() {
 		return errors.Errorf("block number '%d' already exists in cache", nr)
 	}
 

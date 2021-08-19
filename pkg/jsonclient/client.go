@@ -15,11 +15,11 @@ import (
 type (
 	JsonHttpClient struct {
 		url    string
-		logger interfaces.ErrorLogger
+		logger interfaces.Logger
 	}
 )
 
-func New(logger interfaces.ErrorLogger) *JsonHttpClient {
+func New(logger interfaces.Logger) *JsonHttpClient {
 	return &JsonHttpClient{
 		logger: logger,
 	}

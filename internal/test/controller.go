@@ -10,7 +10,7 @@ import (
 
 type (
 	controller struct {
-		logger interfaces.ErrorLogger
+		logger interfaces.Logger
 	}
 )
 

@@ -43,8 +43,8 @@ func main() {
 		panic(err)
 	}
 
-	client := ethclient.New(jClient, e.Logger, config.LatestBlockRefreshInterval)
-	cache := blockcache.New(config.CacheCapacity)
+	client := ethclient.New(jClient, config.LatestBlockRefreshInterval, e.Logger)
+	cache := blockcache.New(config.CacheCapacity, config.CacheRemoveExpired, e.Logger)
 	defer func() {
 		client.Done()
 		cache.Done()

@@ -9,7 +9,7 @@ import (
 type (
 	controller struct {
 		service *service
-		logger  interfaces.ErrorLogger
+		logger  interfaces.Logger
 	}
 )
 

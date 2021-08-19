@@ -29,8 +29,8 @@ func TestController_GetLatestBlock(t *testing.T) {
 		panic(err)
 	}
 
-	client := ethclient.New(jClient, e.Logger, config.LatestBlockRefreshInterval)
-	cache := blockcache.New(config.CacheCapacity)
+	client := ethclient.New(jClient, config.LatestBlockRefreshInterval, e.Logger)
+	cache := blockcache.New(config.CacheCapacity, config.CacheRemoveExpired, e.Logger)
 
 	req := httptest.NewRequest("", "/block", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -57,8 +57,8 @@ func TestController_GetBlockByNumber(t *testing.T) {
 		panic(err)
 	}
 
-	client := ethclient.New(jClient, e.Logger, config.LatestBlockRefreshInterval)
-	cache := blockcache.New(config.CacheCapacity)
+	client := ethclient.New(jClient, config.LatestBlockRefreshInterval, e.Logger)
+	cache := blockcache.New(config.CacheCapacity, config.CacheRemoveExpired, e.Logger)
 
 	req := httptest.NewRequest("", "/block", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -86,8 +86,8 @@ func TestController_GetBlockByNumberHeavyLoad(t *testing.T) {
 		panic(err)
 	}
 
-	client := ethclient.New(jClient, e.Logger, config.LatestBlockRefreshInterval)
-	cache := blockcache.New(config.CacheCapacity)
+	client := ethclient.New(jClient, config.LatestBlockRefreshInterval, e.Logger)
+	cache := blockcache.New(config.CacheCapacity, config.CacheRemoveExpired, e.Logger)
 
 	req := httptest.NewRequest("", "/block", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)

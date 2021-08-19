@@ -16,11 +16,11 @@ type (
 	service struct {
 		client interfaces.EthereumHttpClient
 		cache  interfaces.BlockCacher
-		logger interfaces.ErrorLogger
+		logger interfaces.Logger
 	}
 )
 
-func Service(client interfaces.EthereumHttpClient, cache interfaces.BlockCacher, logger interfaces.ErrorLogger) *service {
+func Service(client interfaces.EthereumHttpClient, cache interfaces.BlockCacher, logger interfaces.Logger) *service {
 	return &service{
 		client: client,
 		cache:  cache,
