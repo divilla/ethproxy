@@ -119,8 +119,8 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 
 			for {
 				select {
-				case <- c.fetchMap[nr].add:
-					c.fetchMap[nr].response <-res
+				case <-c.fetchMap[nr].add:
+					c.fetchMap[nr].response <- res
 				case <-time.After(time.Second):
 					if len(c.fetchMap[nr].add) == 0 {
 						c.mx.Lock()
@@ -134,12 +134,12 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 
 		c.fetchMap[nr].add <- struct{}{}
 
-		res := <- c.fetchMap[nr].response
+		res := <-c.fetchMap[nr].response
 		return res.json, res.err
 	} else {
 		c.fetchMap[nr].add <- struct{}{}
 
-		res := <- c.fetchMap[nr].response
+		res := <-c.fetchMap[nr].response
 		return res.json, res.err
 	}
 }

@@ -19,10 +19,10 @@ const Requests = 1000
 const BlockNumber = 12988583
 
 var (
-	e *echo.Echo
+	e       *echo.Echo
 	jClient *jsonclient.JsonHttpClient
-	client *ethclient.EthereumHttpClient
-	cache *blockcache.EthereumBlockCache
+	client  *ethclient.EthereumHttpClient
+	cache   *blockcache.EthereumBlockCache
 )
 
 func init() {
@@ -110,7 +110,7 @@ func TestController_CacheFreeSpace(t *testing.T) {
 		result := gjson.GetBytes(rec.Body.Bytes(), "cache_free_space")
 		assert.True(t, result.Exists())
 		e.Logger.Info(result.Int())
-		assert.True(t, result.Int() == config.CacheCapacity - 2)
+		assert.True(t, result.Int() == config.CacheCapacity-2)
 	}
 }
 
