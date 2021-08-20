@@ -9,12 +9,12 @@ import (
 
 type (
 	EthereumBlockCache struct {
-		items  map[uint64]*item
-		cap    int
-		remExp time.Duration
-		logger interfaces.Logger
-		rwm    sync.RWMutex
-		done   chan struct{}
+		logger        interfaces.Logger
+		items         map[uint64]*item
+		capacity      int
+		removeExpired time.Duration
+		rwm           sync.RWMutex
+		done          chan struct{}
 	}
 
 	item struct {
@@ -25,13 +25,13 @@ type (
 )
 
 //New creates new string EthereumBlockCache
-func New(capacity int, removeExpired time.Duration, logger interfaces.Logger) *EthereumBlockCache {
+func New(logger interfaces.Logger, capacity int, removeExpired time.Duration) *EthereumBlockCache {
 	c := &EthereumBlockCache{
-		items:  make(map[uint64]*item),
-		remExp: removeExpired,
-		cap:    capacity,
-		logger: logger,
-		done:   make(chan struct{}),
+		items:         make(map[uint64]*item),
+		removeExpired: removeExpired,
+		capacity:      capacity,
+		logger:        logger,
+		done:          make(chan struct{}),
 	}
 
 	//goroutine that deletes expired items from cache
@@ -40,7 +40,7 @@ func New(capacity int, removeExpired time.Duration, logger interfaces.Logger) *E
 			select {
 			case <-c.done:
 				return
-			case <-time.After(c.remExp):
+			case <-time.After(c.removeExpired):
 				c.clear()
 			}
 		}
@@ -86,7 +86,7 @@ func (c *EthereumBlockCache) Put(nr uint64, json []byte, ttl time.Duration) erro
 	return nil
 }
 
-func (c *EthereumBlockCache) Delete(nr uint64) error {
+func (c *EthereumBlockCache) Remove(nr uint64) error {
 	c.rwm.Lock()
 	defer c.rwm.Unlock()
 
@@ -99,7 +99,7 @@ func (c *EthereumBlockCache) Delete(nr uint64) error {
 }
 
 func (c *EthereumBlockCache) FreeSpace() int {
-	return c.cap - len(c.items)
+	return c.capacity - len(c.items)
 }
 
 //Done disposes object
@@ -139,7 +139,7 @@ func (c *EthereumBlockCache) clear() {
 }
 
 func (c *EthereumBlockCache) clearOne() {
-	if len(c.items) < c.cap {
+	if len(c.items) < c.capacity {
 		return
 	}
 

@@ -29,7 +29,7 @@ func Service(client interfaces.EthereumHttpClient, cache interfaces.BlockCacher,
 }
 
 func (s *service) cacheFreeSpace() string {
-	json, err := sjson.Set(`{}`, "cacheFreeSpace", s.cache.FreeSpace())
+	json, err := sjson.Set(`{}`, "cache_free_space", s.cache.FreeSpace())
 	if err != nil {
 		panic(err)
 	}
@@ -38,7 +38,7 @@ func (s *service) cacheFreeSpace() string {
 }
 
 func (s *service) latestBlockNumber() string {
-	json, err := sjson.Set(`{}`, "latestBlockNumber", s.client.LatestBlockNumber())
+	json, err := sjson.Set(`{}`, "latest_block_number", s.client.LatestBlockNumber())
 	if err != nil {
 		panic(err)
 	}

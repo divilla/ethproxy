@@ -12,7 +12,7 @@ type (
 	EthereumHttpClient struct {
 		client            interfaces.HttpClient
 		logger            interfaces.Logger
-		refreshInterval   time.Duration
+		refreshLatest     time.Duration
 		baseRequest       string
 		latestBlockNumber uint64
 		done              chan struct{}
@@ -30,24 +30,25 @@ type (
 	}
 )
 
-func New(client interfaces.HttpClient, refreshInterval time.Duration, logger interfaces.Logger) *EthereumHttpClient {
+func New(client interfaces.HttpClient, logger interfaces.Logger, refreshInterval time.Duration) *EthereumHttpClient {
 	c := &EthereumHttpClient{
-		client:          client,
-		logger:          logger,
-		refreshInterval: refreshInterval,
-		baseRequest:     `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[]}`,
-		done:            make(chan struct{}),
-		fetchMap:        make(map[string]fetch),
+		client:        client,
+		logger:        logger,
+		refreshLatest: refreshInterval,
+		baseRequest:   `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[]}`,
+		done:          make(chan struct{}),
+		fetchMap:      make(map[string]fetch),
 	}
+
+	c.setLatestBlockNumber()
 
 	go func(c *EthereumHttpClient) {
 		for {
 			select {
 			case <-c.done:
 				return
-			default:
-				c.setBlockNumber()
-				time.Sleep(c.refreshInterval)
+			case <-time.After(c.refreshLatest):
+				c.setLatestBlockNumber()
 			}
 		}
 	}(c)
@@ -72,7 +73,7 @@ func (c *EthereumHttpClient) Done() {
 	close(c.done)
 }
 
-func (c *EthereumHttpClient) setBlockNumber() {
+func (c *EthereumHttpClient) setLatestBlockNumber() {
 	req := request("blockNumber")
 	json, err := c.client.Post(req.String())
 	if err != nil {
