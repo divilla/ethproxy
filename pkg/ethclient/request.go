@@ -15,7 +15,7 @@ func request(method string) *jsonRPCRequest {
 	uid := uuid.New().String()
 	json := `{"jsonrpc":"2.0","params":[]}`
 
-	json, err := sjson.Set(json, "method", "eth_"+method)
+	json, err := sjson.Set(json, "method", "eth_" + method)
 	if err != nil {
 		panic(err)
 	}

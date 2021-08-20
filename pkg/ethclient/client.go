@@ -3,6 +3,7 @@ package ethclient
 import (
 	"github.com/divilla/ethproxy/interfaces"
 	"github.com/labstack/echo/v4"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,7 @@ type (
 		latestBlockNumber uint64
 		done              chan struct{}
 		fetchMap          map[string]fetch
+		mx                sync.Mutex
 	}
 
 	fetch struct {
@@ -95,10 +97,12 @@ func (c *EthereumHttpClient) setLatestBlockNumber() {
 
 func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 	if _, ok := c.fetchMap[nr]; !ok {
+		c.mx.Lock()
 		c.fetchMap[nr] = fetch{
 			add:      make(chan struct{}, 1000),
 			response: make(chan response),
 		}
+		c.mx.Unlock()
 
 		go func(c *EthereumHttpClient) {
 			req := request("getBlockByNumber").
@@ -119,8 +123,9 @@ func (c *EthereumHttpClient) getBlockByNumber(nr string) ([]byte, error) {
 					c.fetchMap[nr].response <-res
 				case <-time.After(time.Second):
 					if len(c.fetchMap[nr].add) == 0 {
-						close(c.fetchMap[nr].response)
+						c.mx.Lock()
 						delete(c.fetchMap, nr)
+						c.mx.Unlock()
 						return
 					}
 				}

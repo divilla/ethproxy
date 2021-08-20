@@ -25,7 +25,7 @@ func main() {
 
 	e := echo.New()
 	e.HTTPErrorHandler = cmiddleware.HTTPErrorHandler
-	e.Use(middleware.Logger())
+	//e.Use(middleware.Logger())
 	e.Logger.SetLevel(log.INFO)
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		StackSize: 1 << 10, // 1 KB
